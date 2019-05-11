@@ -1,0 +1,100 @@
+#include <vector>
+#include <queue>
+#include <deque>
+#include <cmath>
+#include <algorithm>
+#include <string>
+#include <climits>
+#include <iomanip>
+#include <set>
+#include <map>
+#include <math.h>
+#include <stack>
+#include <list>
+
+#include <fstream>
+//#include <iostream>
+
+using namespace std;
+
+typedef long long ll;
+typedef unsigned long long ull;
+
+//ifstream cin("input.txt"); ofstream cout("output.txt");
+ifstream cin("automaton.in"); ofstream cout("automaton.out");
+
+vector <map<char, string>> g;
+map <char, int> name;
+
+bool cheak(string ow, string s, string w) {
+	if (ow.size() + s.size() > w.size())
+		return false;
+	int q = 0;
+	while (q < s.size() && s[q] >= 'a' && s[q] <= 'z')
+		q++;
+	if (q == s.size())
+		return w == ow + s;
+	int nto = name.find(s[q])->second;
+	auto it = g[nto].find(w[ow.size()]);
+	if (it == g[nto].end())
+		return false;
+	string to = it->second;
+	ow += w[ow.size()] + (q != 0 ? s.substr(0, q - 1) : "");
+	s = s.substr(q + 1);
+	int i = 0; 
+	if (to[0] == '0') {
+		if (cheak(ow, s, w))
+			return true;
+		i++;
+	}
+	for (; i < to.size(); i++) {
+		if (cheak(ow, to[i] + s, w))
+			return true;
+	}
+	return false;
+}
+
+int main() {
+	ios_base::sync_with_stdio(false);
+	cin.tie(0);
+	cout.tie(0);
+	int e, m;
+	string S;
+	cin >> e >> S;
+	name.insert({ S[0], 0 });
+	g.resize(1);
+	for (int i = 0; i < e; i++) {
+		char st;
+		string to;
+		cin >> st >> to >> to;
+		if (name.find(st) == name.end()) {
+			name.insert({ st, name.size() });
+			g.push_back(map<char, string>());
+		}
+		int its = name.find(st)->second;
+		auto it = g[its].find(to[0]);
+		if (it == g[its].end()) {
+			g[its].insert({ to[0], "" });
+			it = g[its].find(to[0]);
+		}
+		if (to.size() == 2) {
+			it->second += to[1];
+			if (name.find(to[1]) == name.end()) {
+				name.insert({ to[1], name.size() });
+				g.push_back(map<char, string>());
+			}
+		}
+		else
+			it->second = "0" + it->second;
+	}
+	cin >> m;
+	while (m--) {
+		string w;
+		cin >> w;
+		if (cheak("", S, w))
+			cout << "yes\n";
+		else
+			cout << "no\n";
+	}
+	return 0;
+}
