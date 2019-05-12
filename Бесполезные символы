@@ -1,0 +1,123 @@
+#include <vector>
+#include <queue>
+#include <deque>
+#include <cmath>
+#include <algorithm>
+#include <string>
+#include <climits>
+#include <iomanip>
+#include <set>
+#include <map>
+#include <math.h>
+#include <stack>
+#include <list>
+
+#include <fstream>
+//#include <iostream>
+
+using namespace std;
+
+typedef long long ll;
+typedef unsigned long long ull;
+
+//ifstream cin("input.txt"); ofstream cout("output.txt");
+ifstream cin("useless.in"); ofstream cout("useless.out");
+
+vector <vector <string> > g;
+vector <vector <int> > gc;
+vector <vector <pair<int, int> > > gr;
+string nameback;
+map <char, int> name;
+vector <bool> used, usef;
+
+void dfs(int v) {
+	used[v] = true;
+	for (int h = 0; h < g[v].size(); h++) {
+		if (gc[v][h] != 0)
+			continue;
+		for (int i = 0; i < g[v][h].size(); i++) {
+			auto it = name.find(g[v][h][i]);
+			if (!used[it->second])
+				dfs(it->second);
+		}
+	}
+}
+
+int main() {
+	ios_base::sync_with_stdio(false);
+	cin.tie(0);
+	cout.tie(0);
+	int n;
+	string s;
+	cin >> n >> s;
+	name.insert({ s[0], name.size() });
+	nameback += s[0];
+	g.push_back(vector<string>());
+	gc.push_back(vector<int>());
+	gr.push_back(vector <pair<int, int>>());
+	usef.push_back(false);
+	queue <int> q;
+	while (n--) {
+		getline(cin, s);
+		if (s == "") {
+			n++;
+			continue;
+		}
+		int d = s.find('>');
+		bool t = true;
+		string ss;
+		if (name.find(s[0]) == name.end()) {
+			name.insert({ s[0], name.size() });
+			nameback += s[0];
+			g.push_back(vector<string>());
+			gc.push_back(vector<int>());
+			gr.push_back(vector <pair<int, int>>());
+			usef.push_back(false);
+		}
+		int it = name.find(s[0])->second;
+
+		for (d++; d < s.size(); d++) {
+			if (s[d] >= 'A' && s[d] <= 'Z') {
+				t = false, ss += s[d];
+				if (name.find(s[d]) == name.end()) {
+					name.insert({ s[d], name.size() });
+					nameback += s[d];
+					g.push_back(vector<string>());
+					gc.push_back(vector<int>());
+					gr.push_back(vector <pair<int, int>>());
+					usef.push_back(false);
+				}
+				gr[name.find(s[d])->second].push_back({ it, g[it].size() });
+			}
+		}
+		if (!t)
+			g[it].push_back(ss), gc[it].push_back(ss.size());
+		else if (!usef[it]) {
+			usef[it] = true;
+			q.push(it);
+		}
+	}
+	while (!q.empty()) {
+		int v = q.front();
+		q.pop();
+		for (int i = 0; i < gr[v].size(); i++) {
+			if (--gc[gr[v][i].first][gr[v][i].second] == 0
+				&& !usef[gr[v][i].first]) {
+				usef[gr[v][i].first] = true;
+				q.push(gr[v][i].first);
+			}
+		}
+	}
+	used.resize(name.size(), false);
+	if (usef[0])
+		dfs(0);
+	string ans;
+	for (int i = 0; i < name.size(); i++) {
+		if (!used[i])
+			ans += nameback[i];
+	}
+	sort(ans.begin(), ans.end());
+	for (int i = 0; i < ans.size(); i++)
+		cout << ans[i] << " ";
+	return 0;
+}
