@@ -1,0 +1,100 @@
+#include <vector>
+#include <queue>
+#include <deque>
+#include <cmath>
+#include <algorithm>
+#include <string>
+#include <climits>
+#include <iomanip>
+#include <set>
+#include <map>
+#include <math.h>
+#include <stack>
+#include <list>
+
+#include <fstream>
+//#include <iostream>
+
+using namespace std;
+
+typedef long long ll;
+typedef unsigned long long ull;
+
+//ifstream cin("input.txt"); ofstream cout("output.txt");
+ifstream cin("nfc.in"); ofstream cout("nfc.out");
+
+int n = 0;
+map <char, int> name;
+string nameback;
+vector <vector <pair<int, int> > > g;
+vector <vector <char> > gc;
+
+int main() {
+	ios_base::sync_with_stdio(false);
+	cin.tie(0);
+	cout.tie(0);
+	int q;
+	string s;
+	cin >> q >> s;
+	g.resize(1);
+	gc.resize(1);
+	nameback += s;
+	name.insert({ s[0], n++ });
+	while (q--) {
+		getline(cin, s);
+		if (s == "") {
+			q++;
+			continue;
+		}
+		if (name.find(s[0]) == name.end()) {
+			g.push_back(vector <pair<int, int> >());
+			gc.push_back(vector <char>());
+			name.insert({ s[0], n++ });
+			nameback += s[0];
+		}
+		int it = name.find(s[0])->second;
+		if (s[5] >= 'a' && s[5] <= 'z')
+			gc[it].push_back(s[5]);
+		else {
+			if (name.find(s[5]) == name.end()) {
+				g.push_back(vector <pair<int, int> >());
+				gc.push_back(vector <char>());
+				name.insert({ s[5], n++ });
+				nameback += s[5];
+			}
+			if (name.find(s[6]) == name.end()) {
+				g.push_back(vector <pair<int, int> >());
+				gc.push_back(vector <char>());
+				name.insert({ s[6], n++ });
+				nameback += s[6];
+			}
+			g[it].push_back({ name.find(s[5])->second, name.find(s[6])->second });
+		}
+	}
+	cin >> s;
+	ll md = 1000000007;
+	vector <vector <vector <ll> > > dp(n, vector<vector<ll> >(s.size(), vector<ll>(s.size(), 0)));
+	for (int v = 0; v < n; v++) {
+		for (int h = 0; h < gc[v].size(); h++) {
+			int i = s.find(gc[v][h]);
+			while (i != -1) {
+				dp[v][i][i]++;
+				i = s.find(gc[v][h], i + 1);
+			}
+		}
+	}
+	for (int m = 1; m < s.size(); m++) {
+		for (int v = 0; v < n; v++) {
+			for (int h = 0; h < g[v].size(); h++) {
+				for (int i = 0; i < s.size() - m; i++) {
+					for (int k = 0; k < m; k++) {
+						dp[v][i][i + m] += dp[g[v][h].first][i][i + k] * dp[g[v][h].second][i + k + 1][i + m];
+						dp[v][i][i + m] %= md;
+					}
+				}
+			}
+		}
+	}
+	cout << dp[0][0][s.size() - 1] % md;
+	return 0;
+}
