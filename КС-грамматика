@@ -1,0 +1,274 @@
+#include <vector>
+#include <queue>
+#include <deque>
+#include <cmath>
+#include <algorithm>
+#include <string>
+#include <climits>
+#include <iomanip>
+#include <set>
+#include <map>
+#include <math.h>
+#include <stack>
+#include <list>
+
+#include <fstream>
+//#include <iostream>
+
+using namespace std;
+
+typedef long long ll;
+typedef unsigned long long ull;
+
+//ifstream cin("input.txt"); ofstream cout("output.txt");
+ifstream cin("cf.in"); ofstream cout("cf.out");
+
+int n = 0;
+map <char, int> name;
+string nameback;
+vector <vector <pair<int, int> > > gh;
+vector <vector <vector <int> > > g;
+vector <vector <char> > ghc;
+map <int, int> eg;
+
+void delLongRules() {
+	for (int v = 0; v < g.size(); v++) {
+		for (int h = 0; h < g[v].size(); h++) {
+			if (g[v][h].size() > 2) {
+				g.push_back(vector<vector<int> >());
+				g[n].push_back(vector<int>());
+				g[n][0] = g[v][h];
+				g[n][0].pop_back();
+				g[v][h] = { n, g[v][h][g[v][h].size() - 1] };
+				n++;
+			}
+		}
+	}
+}
+
+void del_e_Rules() {
+	for (int v = 0; v < g.size(); v++) {
+		for (int h = 0; h < g[v].size(); h++) {
+			if (g[v][h].size() == 2) {
+				auto it = eg.find(g[v][h][0]);
+				if (it != eg.end())
+					g[v].push_back({ g[v][h][1] });
+				it = eg.find(g[v][h][1]);
+				if (it != eg.end())
+					g[v].push_back({ g[v][h][0] });
+			}
+		}
+	}
+	for (auto it : eg) {
+		swap(g[it.first][it.second], g[it.first][g[it.first].size() - 1]);
+		g[it.first].pop_back();
+	}
+}
+
+void delUnitRules() {
+	vector <pair<int, int> > unit;
+	map <int, vector <int> > un;
+	for (int v = 0; v < g.size(); v++) {
+		for (int h = 0; h < g[v].size(); h++) {
+			if (g[v][h].size() == 1 && g[v][h][0] >= 0) {
+				unit.push_back({ v, g[v][h][0] });
+				if (un.find(g[v][h][0]) == un.end())
+					un.insert({ g[v][h][0], {g[v][h][0], v} });
+				swap(g[v][h], g[v][g[v].size() - 1]);
+				g[v].pop_back();
+				h--;
+			}
+		}
+	}
+	for (int i = 0; i < unit.size(); i++) {
+		auto it1 = un.find(unit[i].first);
+		if (it1 == un.end())
+			continue;
+		auto it2 = un.find(unit[i].second);
+		it2->second.insert(it2->second.end(), it1->second.begin(), it1->second.end());
+	}
+	for (auto it : un) {
+		int v = it.first;
+		vector <int> d = it.second;
+		sort(d.begin(), d.end());
+		for (int i = 0; i < d.size(); i++) {
+			if (i == v || (i > 0 && d[i] == d[i - 1]))
+				continue;
+			g[i].insert(g[i].end(), g[v].begin(), g[v].end());
+		}
+	}
+}
+
+vector <bool> usef, used;
+queue <int> freep;
+vector <vector<pair<int, int> > > gr;
+vector <vector <int> > gc;
+
+void dfs(int v) {
+	used[v] = true;
+	for (int h = 0; h < g[v].size(); h++) {
+		if (gc[v][h] != 0) {
+			swap(g[v][h], g[v][g[v].size() - 1]);
+			gc[v][h] = gc[v][gc[v].size() - 1];
+			g[v].pop_back();
+			gc.pop_back();
+			h--;
+			continue;
+		}
+		for (int i = 0; i < g[v][h].size(); i++) {
+			if (g[v][h][i] < 0)
+				continue;
+			if (!used[g[v][h][i]])
+				dfs(g[v][h][i]);
+		}
+	}
+}
+
+void delUselessSymbol() {
+	usef.resize(n, false);
+	used.resize(n, false);
+	gr.resize(n);
+	gc.resize(n);
+	queue <int> q;
+	for (int v = 0; v < g.size(); v++) {
+		gc[v].resize(g[v].size());
+		for (int h = 0; h < g[v].size(); h++) {
+			int c = 0;
+			for (int i = 0; i < g[v][h].size(); i++) {
+				if (g[v][h][i] >= 0) {
+					c++;
+					gr[g[v][h][i]].push_back({ v, h });
+				}
+			}
+			gc[v][h] = c;
+			if (c==0 && !usef[v]) {
+				usef[v] = true;
+				q.push(v);
+			}
+		}
+	}
+	while (!q.empty()) {
+		int v = q.front();
+		q.pop();
+		for (int i = 0; i < gr[v].size(); i++) {
+			if (--gc[gr[v][i].first][gr[v][i].second] == 0
+				&& !usef[gr[v][i].first]) {
+				usef[gr[v][i].first] = true;
+				q.push(gr[v][i].first);
+			}
+		}
+	}
+	dfs(0);
+	for (int i = 0; i < n; i++) {
+		if (!used[i]) {
+			g[i].clear();
+			freep.push(i);
+		}
+	}
+}
+
+void splitAFewTer() {
+	ghc.resize(n);
+	gh.resize(n);
+	for (int v = 0; v < g.size(); v++) {
+		for (int h = 0; h < g[v].size(); h++) {
+			if (g[v][h].size() == 1) {
+				ghc[v].push_back(-g[v][h][0]);
+				continue;
+			}
+			for (int i = 0; i < g[v][h].size(); i++) {
+				if (g[v][h][i] < 0) {
+					if (!freep.empty()) {
+						int to = freep.front();
+						freep.pop();
+						ghc[to].push_back(-g[v][h][i]);
+						g[v][h][i] = to;
+					}
+					else {
+						ghc.push_back({ (char)(-g[v][h][i]) });
+						gh.push_back(vector <pair<int, int>>());
+						g[v][h][i] = n++;
+					}
+				}
+			}
+			gh[v].push_back({ g[v][h][0], g[v][h][1] });
+		}
+	}
+}
+
+bool NFH(string s) {
+	vector <vector <vector <bool> > > dp(n, vector<vector<bool> >(s.size(), vector<bool>(s.size(), false)));
+	for (int v = 0; v < n; v++) {
+		for (int h = 0; h < ghc[v].size(); h++) {
+			int i = s.find(ghc[v][h]);
+			while (i != -1) {
+				dp[v][i][i] = true;
+				i = s.find(ghc[v][h], i + 1);
+			}
+		}
+	}
+	for (int m = 1; m < s.size(); m++) {
+		for (int v = 0; v < n; v++) {
+			for (int h = 0; h < gh[v].size(); h++) {
+				for (int i = 0; i < s.size() - m; i++) {
+					for (int k = 0; k < m; k++)
+						dp[v][i][i + m] = dp[v][i][i + m] || (dp[gh[v][h].first][i][i + k] && dp[gh[v][h].second][i + k + 1][i + m]);
+				}
+			}
+		}
+	}
+	return dp[0][0][s.size() - 1];
+}
+
+int main() {
+	ios_base::sync_with_stdio(false);
+	cin.tie(0);
+	cout.tie(0);
+	int q;
+	string s;
+	cin >> q >> s;
+	g.resize(1);
+	nameback += s;
+	name.insert({ s[0], n++ });
+	while (q--) {
+		getline(cin, s);
+		if (s == "") {
+			q++;
+			continue;
+		}
+		if (name.find(s[0]) == name.end()) {
+			g.push_back(vector <vector <int> >());
+			name.insert({ s[0], n++ });
+			nameback += s[0];
+		}
+		int it = name.find(s[0])->second;
+		g[it].push_back(vector<int>());
+		if (s.size() < 5)
+			g[it][g[it].size() - 1].push_back(-1), eg.insert({ it, g[it].size() - 1 });
+		for (int i = 5; i < s.size(); i++) {
+			if (s[i] >= 'a' && s[i] < 'z')
+				g[it][g[it].size() - 1].push_back(-s[i]);
+			else if (name.find(s[i]) == name.end()) {
+				g.push_back(vector <vector <int> >());
+				g[it][g[it].size() - 1].push_back(n);
+				name.insert({ s[i], n++ });
+				nameback += s[i];
+			}
+			else
+				g[it][g[it].size() - 1].push_back(name.find(s[i])->second);
+		}
+	}
+
+	delLongRules();
+	del_e_Rules();
+	delUnitRules();
+	delUselessSymbol();
+	splitAFewTer();
+
+	cin >> s;
+	if (NFH(s))
+		cout << "yes";
+	else
+		cout << "no";
+	return 0;
+}
