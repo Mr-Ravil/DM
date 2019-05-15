@@ -1,0 +1,176 @@
+#include <vector>
+#include <queue>
+#include <deque>
+#include <cmath>
+#include <algorithm>
+#include <string>
+#include <climits>
+#include <iomanip>
+#include <set>
+#include <map>
+#include <math.h>
+#include <stack>
+#include <list>
+ 
+//#include <fstream>
+#include <iostream>
+ 
+using namespace std;
+ 
+typedef long long ll;
+typedef unsigned long long ull;
+ 
+//ifstream cin("input.txt"); ofstream cout("output.txt");
+//ifstream cin("fastminimization.in"); ofstream cout("fastminimization.out");
+ 
+vector <bool> usef;
+vector <bool> used;
+vector <bool> ter;
+vector <int> terin;
+vector <map <int, vector<int> > > g;
+vector <vector <pair<int, int> > > gr;
+ 
+void useful_states(int v) {
+    usef[v] = true;
+    for (auto it : g[v]) {
+        for (int to : it.second) {
+            if (!usef[to])
+                useful_states(to);
+        }
+    }
+}
+ 
+void dfs(int v = 0) {
+    used[v] = true;
+    for (int i = 0; i < gr[v].size(); i++) {
+        int to = gr[v][i].first;
+        if (!used[to])
+            dfs(to);
+    }
+}
+ 
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(0);
+    cout.tie(0);
+    int n, m, k;
+    cin >> n >> m >> k;
+    ter.resize(n, false);
+    terin.resize(k);
+    usef.resize(n, false);
+    used.resize(n, false);
+    for (int i = 0; i < k; i++) {
+        cin >> terin[i];
+        ter[--terin[i]] = true;
+    }
+    const int alfa = 'z' - 'a' + 1;
+    g.resize(n);
+    gr.resize(n);
+    for (int i = 0; i < m; i++) {
+        int x, y;
+        char c;
+        cin >> x >> y >> c;
+        x--, y--;
+        if (g[y].find(c - 'a') == g[y].end())
+            g[y].insert({ c - 'a', vector<int>(1, x) });
+        else
+            g[y].find(c - 'a')->second.push_back(x);
+        gr[x].push_back({ y, c - 'a' });
+    }
+    for (int i = 0; i < k; i++)
+        useful_states(terin[i]);
+    dfs();
+    for (int i = 0; i < n; i++)
+        usef[i] = usef[i] && used[i];
+ 
+    vector <set<int> > P(2);
+    vector <int> Class(n);
+    for (int i = 0; i < n; i++) {
+        if (usef[i]) {
+            if (ter[i])
+                P[0].insert(i), Class[i] = 0;
+            else
+                P[1].insert(i), Class[i] = 1;
+        }
+    }
+    if (P[1].empty())
+        P.pop_back();
+    else {
+        queue <pair<int, int> > Queue;
+        for (int i = 0; i < alfa; i++) {
+            Queue.push({ 0, i });
+            Queue.push({ 1, i });
+        }
+        while (!Queue.empty()) {
+            int C = Queue.front().first;
+            int a = Queue.front().second;
+            Queue.pop();
+            map <int, vector<int>> Involved;
+            for (int q : P[C]) {
+                auto it = g[q].find(a);
+                if (it == g[q].end())
+                    continue;
+                for (int r : it->second) {
+                    if (!usef[r])
+                        continue;
+                    int i = Class[r];
+                    if (Involved.find(i) == Involved.end())
+                        Involved.insert({ i, vector<int>() });
+                    Involved.find(i)->second.push_back(r);
+                }
+            }
+            for (auto it : Involved) {
+                int i = it.first;
+                if (it.second.size() < P[i].size()) {
+                    int j = P.size();
+                    P.push_back(set<int>());
+                    for (int r : it.second) {
+                        P[i].erase(r);
+                        P[j].insert(r);
+                    }
+                    if (P[j].size() > P[i].size())
+                        swap(P[j], P[i]);
+                    for (int r : P[j])
+                        Class[r] = j;
+                    for (int c = 0; c < alfa; c++)
+                        Queue.push({ j, c });
+                }
+            }
+        }
+    }
+ 
+ 
+    if (Class[0] != 0) {
+        int h = Class[0];
+        swap(P[0], P[h]);
+        for (int i : P[0])
+            Class[i] = 0;
+        for (int i : P[h])
+            Class[i] = h;
+    }
+ 
+    set <int> tern;
+    for (int i = 0; i < k; i++) {
+        if (usef[terin[i]])
+        tern.insert(Class[terin[i]]);
+    }
+    int mn = 0;
+    vector <set <pair <int, int> > > gn(P.size());
+    for (int i = 0; i < P.size(); i++) {
+        for (int from : P[i]) {
+            for (auto to : gr[from]) {
+                if (usef[to.first])
+                    gn[i].insert({ Class[to.first], to.second });
+            }
+        }
+        mn += gn[i].size();
+    }
+    cout << P.size() << " " << mn << " " << tern.size() << "\n";
+    for (int i : tern)
+        cout << i + 1 << " ";
+    for (int i = 0; i < P.size(); i++) {
+        for (auto it : gn[i])
+            cout << "\n" << i + 1 << " " << it.first + 1 << " " << (char)('a' + it.second);
+    }
+    return 0;
+}
